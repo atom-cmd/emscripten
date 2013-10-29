@@ -444,7 +444,11 @@ mergeInto(LibraryManager.library, {
       } else {
         // Otherwise, calculate the movement based on the changes
         // in the coordinates.
-        var rect = Module["canvas"].getBoundingClientRect();
+        if (Module["canvasFront"]) {
+          var rect = Module["canvasFront"].getBoundingClientRect();
+        } else {
+          var rect = Module["canvas"].getBoundingClientRect();
+        }
         var x = event.pageX - (window.scrollX + rect.left);
         var y = event.pageY - (window.scrollY + rect.top);
 

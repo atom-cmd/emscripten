@@ -362,6 +362,7 @@ var LibrarySDL = {
 
     freeSurface: function(surf) {
       var info = SDL.surfaces[surf];
+      if (!info) return; // surface has already been freed
       if (!info.usePageCanvas && info.canvas) SDL.canvasPool.push(info.canvas);
       _free(info.buffer);
       _free(info.pixelFormat);
@@ -754,7 +755,11 @@ var LibrarySDL = {
 
   SDL_SetVideoMode: function(width, height, depth, flags) {
     ['mousedown', 'mouseup', 'mousemove', 'DOMMouseScroll', 'mousewheel', 'mouseout'].forEach(function(event) {
-      Module['canvas'].addEventListener(event, SDL.receiveEvent, true);
+      if (Module["canvasFront"]) {
+        Module['canvasFront'].addEventListener(event, SDL.receiveEvent, true);
+      } else {
+        Module['canvas'].addEventListener(event, SDL.receiveEvent, true);
+      }
     });
     Browser.setCanvasSize(width, height, true);
     // Free the old surface first.
@@ -1010,10 +1015,27 @@ var LibrarySDL = {
   },
 
   SDL_CreateRGBSurfaceFrom: function(pixels, width, height, depth, pitch, rmask, gmask, bmask, amask) {
-    // TODO: Actually fill pixel data to created surface.
     // TODO: Take into account depth and pitch parameters.
-    console.log('TODO: Partially unimplemented SDL_CreateRGBSurfaceFrom called!');
-    return SDL.makeSurface(width, height, 0, false, 'CreateRGBSurfaceFrom', rmask, gmask, bmask, amask);
+
+    var surface = SDL.makeSurface(width, height, 0, false, 'CreateRGBSurfaceFrom', rmask, gmask, bmask, amask);
+
+    var surfaceData = SDL.surfaces[surface];
+    var surfaceImageData = surfaceData.ctx.getImageData(0, 0, width, height);
+    var surfacePixelData = surfaceImageData.data;
+
+    // Fill pixel data to created surface.
+    // Supports SDL_PIXELFORMAT_RGBA8888 and SDL_PIXELFORMAT_RGB888
+    var channels = amask ? 4 : 3; // RGBA8888 or RGB888
+    for (var pixelOffset = 0; pixelOffset < width*height; pixelOffset++) {
+      surfacePixelData[pixelOffset*4+0] = HEAPU8[pixels + (pixelOffset*channels+0)]; // R
+      surfacePixelData[pixelOffset*4+1] = HEAPU8[pixels + (pixelOffset*channels+1)]; // G
+      surfacePixelData[pixelOffset*4+2] = HEAPU8[pixels + (pixelOffset*channels+2)]; // B
+      surfacePixelData[pixelOffset*4+3] = amask ? HEAPU8[pixels + (pixelOffset*channels+3)] : 0xff; // A
+    };
+    
+    surfaceData.ctx.putImageData(surfaceImageData, 0, 0);
+
+    return surface;
   },
 
   SDL_DisplayFormatAlpha: function(surf) {
@@ -2025,7 +2047,11 @@ var LibrarySDL = {
   SDL_Has3DNowExt: function() { return 0; },
   SDL_HasSSE: function() { return 0; },
   SDL_HasSSE2: function() { return 0; },
-  SDL_HasAltiVec: function() { return 0; }
+  SDL_HasAltiVec: function() { return 0; },
+
+  // jsdf
+  SDL_EventState: function() {},
+
 };
 
 autoAddDeps(LibrarySDL, '$SDL');
