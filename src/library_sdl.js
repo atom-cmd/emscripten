@@ -1027,10 +1027,11 @@ var LibrarySDL = {
     // Supports SDL_PIXELFORMAT_RGBA8888 and SDL_PIXELFORMAT_RGB888
     var channels = amask ? 4 : 3; // RGBA8888 or RGB888
     for (var pixelOffset = 0; pixelOffset < width*height; pixelOffset++) {
-      surfacePixelData[pixelOffset*4+0] = HEAPU8[pixels + (pixelOffset*channels+0)]; // R
-      surfacePixelData[pixelOffset*4+1] = HEAPU8[pixels + (pixelOffset*channels+1)]; // G
-      surfacePixelData[pixelOffset*4+2] = HEAPU8[pixels + (pixelOffset*channels+2)]; // B
-      surfacePixelData[pixelOffset*4+3] = amask ? HEAPU8[pixels + (pixelOffset*channels+3)] : 0xff; // A
+
+      surfacePixelData[pixelOffset*4] = {{{ makeGetValue('pixels', 'pixelOffset*channels', 'i8', null, true) }}}; // R
+      surfacePixelData[pixelOffset*4+1] = {{{ makeGetValue('pixels', 'pixelOffset*channels+1', 'i8', null, true) }}}; // G
+      surfacePixelData[pixelOffset*4+2] = {{{ makeGetValue('pixels', 'pixelOffset*channels+2', 'i8', null, true) }}}; // B
+      surfacePixelData[pixelOffset*4+3] = amask ? {{{ makeGetValue('pixels', 'pixelOffset*channels+3', 'i8', null, true) }}} : 0xff; // A
     };
     
     surfaceData.ctx.putImageData(surfaceImageData, 0, 0);
