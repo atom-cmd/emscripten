@@ -674,70 +674,111 @@ mergeInto(LibraryManager.library, {
     }, millis);
   },
 
+  // emscripten_set_main_loop: function(func, fps, simulateInfiniteLoop) {
+  //   Module['noExitRuntime'] = true;
+
+  //   Browser.mainLoop.runner = function() {
+  //     if (ABORT) return;
+  //     if (Browser.mainLoop.queue.length > 0) {
+  //       var start = Date.now();
+  //       var blocker = Browser.mainLoop.queue.shift();
+  //       blocker.func(blocker.arg);
+  //       if (Browser.mainLoop.remainingBlockers) {
+  //         var remaining = Browser.mainLoop.remainingBlockers;
+  //         var next = remaining%1 == 0 ? remaining-1 : Math.floor(remaining);
+  //         if (blocker.counted) {
+  //           Browser.mainLoop.remainingBlockers = next;
+  //         } else {
+  //           // not counted, but move the progress along a tiny bit
+  //           next = next + 0.5; // do not steal all the next one's progress
+  //           Browser.mainLoop.remainingBlockers = (8*remaining + next)/9;
+  //         }
+  //       }
+  //       console.log('main loop blocker "' + blocker.name + '" took ' + (Date.now() - start) + ' ms'); //, left: ' + Browser.mainLoop.remainingBlockers);
+  //       Browser.mainLoop.updateStatus();
+  //       setTimeout(Browser.mainLoop.runner, 0);
+  //       return;
+  //     }
+  //     if (Browser.mainLoop.shouldPause) {
+  //       // catch pauses from non-main loop sources
+  //       Browser.mainLoop.paused = true;
+  //       Browser.mainLoop.shouldPause = false;
+  //       return;
+  //     }
+
+  //     if (Module['preMainLoop']) {
+  //       Module['preMainLoop']();
+  //     }
+
+  //     Runtime.dynCall('v', func);
+
+  //     if (Module['postMainLoop']) {
+  //       Module['postMainLoop']();
+  //     }
+
+  //     if (Browser.mainLoop.shouldPause) {
+  //       // catch pauses from the main loop itself
+  //       Browser.mainLoop.paused = true;
+  //       Browser.mainLoop.shouldPause = false;
+  //       return;
+  //     }
+  //     Browser.mainLoop.scheduler();
+  //   }
+  //   if (fps && fps > 0) {
+  //     Browser.mainLoop.scheduler = function() {
+  //       setTimeout(Browser.mainLoop.runner, 1000/fps); // doing this each time means that on exception, we stop
+  //     }
+  //   } else {
+  //     Browser.mainLoop.scheduler = function() {
+  //       Browser.requestAnimationFrame(Browser.mainLoop.runner);
+  //     }
+  //   }
+  //   Browser.mainLoop.scheduler();
+
+  //   if (simulateInfiniteLoop) {
+  //     throw 'SimulateInfiniteLoop';
+  //   }
+  // },
+
+
   emscripten_set_main_loop: function(func, fps, simulateInfiniteLoop) {
     Module['noExitRuntime'] = true;
 
-    Browser.mainLoop.runner = function() {
-      if (ABORT) return;
-      if (Browser.mainLoop.queue.length > 0) {
-        var start = Date.now();
-        var blocker = Browser.mainLoop.queue.shift();
-        blocker.func(blocker.arg);
-        if (Browser.mainLoop.remainingBlockers) {
-          var remaining = Browser.mainLoop.remainingBlockers;
-          var next = remaining%1 == 0 ? remaining-1 : Math.floor(remaining);
-          if (blocker.counted) {
-            Browser.mainLoop.remainingBlockers = next;
-          } else {
-            // not counted, but move the progress along a tiny bit
-            next = next + 0.5; // do not steal all the next one's progress
-            Browser.mainLoop.remainingBlockers = (8*remaining + next)/9;
-          }
-        }
-        console.log('main loop blocker "' + blocker.name + '" took ' + (Date.now() - start) + ' ms'); //, left: ' + Browser.mainLoop.remainingBlockers);
-        Browser.mainLoop.updateStatus();
-        setTimeout(Browser.mainLoop.runner, 0);
-        return;
-      }
-      if (Browser.mainLoop.shouldPause) {
-        // catch pauses from non-main loop sources
-        Browser.mainLoop.paused = true;
-        Browser.mainLoop.shouldPause = false;
-        return;
-      }
+    var steps = 0;
+    var stepStart;
+    var stepEnd;
+    var sampleStep = false;
 
-      if (Module['preMainLoop']) {
-        Module['preMainLoop']();
-      }
+    Browser.step_func = function() { Runtime.dynCall('v', func); };
+
+    function step_run(){
+      // if (sampleStep) {
+      //   console.log('yield time', new Date() - stepEnd);
+      // }
+      // steps++;
+      // sampleStep = steps % 10 == 0
+      // if (sampleStep) {
+      //   console.log('step',steps)
+      //   stepStart = new Date();
+      // }
 
       Runtime.dynCall('v', func);
 
-      if (Module['postMainLoop']) {
-        Module['postMainLoop']();
-      }
+      // if (sampleStep) {
+      //   stepEnd = new Date();
+      //   console.log('step time',stepEnd - stepStart);
+      // }
+      // step_req();
+      setTimeout(step_run);
+    }
 
-      if (Browser.mainLoop.shouldPause) {
-        // catch pauses from the main loop itself
-        Browser.mainLoop.paused = true;
-        Browser.mainLoop.shouldPause = false;
-        return;
-      }
-      Browser.mainLoop.scheduler();
+    function step_req() {
+      // Browser.requestAnimationFrame(step_run);
+      // 
+      setTimeout(step_run);
     }
-    if (fps && fps > 0) {
-      Browser.mainLoop.scheduler = function() {
-        setTimeout(Browser.mainLoop.runner, 1000/fps); // doing this each time means that on exception, we stop
-      }
-    } else {
-      Browser.mainLoop.scheduler = function() {
-        Browser.requestAnimationFrame(Browser.mainLoop.runner);
-      }
-    }
-    Browser.mainLoop.scheduler();
 
-    if (simulateInfiniteLoop) {
-      throw 'SimulateInfiniteLoop';
-    }
+    step_run();
   },
 
   emscripten_cancel_main_loop: function() {
