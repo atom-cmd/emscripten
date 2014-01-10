@@ -749,8 +749,6 @@ mergeInto(LibraryManager.library, {
     var stepEnd;
     var sampleStep = false;
 
-    Browser.step_func = function() { Runtime.dynCall('v', func); };
-
     function step_run(){
       // if (sampleStep) {
       //   console.log('yield time', new Date() - stepEnd);
@@ -772,11 +770,7 @@ mergeInto(LibraryManager.library, {
       setTimeout(step_run);
     }
 
-    function step_req() {
-      // Browser.requestAnimationFrame(step_run);
-      // 
-      setTimeout(step_run);
-    }
+    Browser.step_func = step_run;
 
     step_run();
   },
