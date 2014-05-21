@@ -19,6 +19,9 @@
   3. This notice may not be removed or altered from any source distribution.
 */
 
+
+#undef __APPLE__
+
 #ifndef _SDL_config_h
 #define _SDL_config_h
 
