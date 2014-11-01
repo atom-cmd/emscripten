@@ -2986,8 +2986,11 @@ var LibrarySDL = {
   SDL_HasAltiVec: function() { return 0; },
 
   // jsdf
-  SDL_EventState: function() {},
-
+  SDL_EventState: function() { return 0; },
+  SDL_SetCursor: function() { return 0; },
+  SDL_CreateCursor: function() { return 0; },
+  SDL_SetClipRect: function() { return 0; },
+  SDL_FreeCursor: function() { return 0; },
 };
 
 autoAddDeps(LibrarySDL, '$SDL');
